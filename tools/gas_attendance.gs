@@ -67,6 +67,30 @@ function logDebug(ss, pesan) {
   tab.appendRow([new Date(), pesan]);
 }
 
+// Diagnostik: dump isi tab apa aja (hapus nanti)
+function dumpTab(ss, nama) {
+  var tab = ss.getSheetByName(nama);
+  if (!tab) return "TAB '" + nama + "' TIDAK ADA";
+  var data = tab.getDataRange().getValues();
+  var out = [];
+  for (var i = 0; i < data.length; i++) {
+    out.push("baris" + (i + 1) + "='" + String(data[i][0]) + "'|'" + String(data[i][1]) + "'|'" + String(data[i][2]) + "'|'" + String(data[i][3]) + "'|'" + String(data[i][4]) + "'");
+  }
+  return out.join(" # ");
+}
+
+// Diagnostik: dump isi tab DATA_SISWA biar keliatan perbedaan UID (hapus nanti)
+function dumpDataSiswa(ss) {
+  var ds = ss.getSheetByName("DATA_SISWA");
+  if (!ds) return "DATA_SISWA TIDAK ADA";
+  var data = ds.getDataRange().getValues();
+  var out = [];
+  for (var i = 0; i < data.length; i++) {
+    out.push("baris" + (i + 1) + "='" + String(data[i][0]) + "'|'" + String(data[i][1]) + "'|'" + String(data[i][2]) + "'");
+  }
+  return out.join(" # ");
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -79,9 +103,11 @@ function doPost(e) {
     if (siswa) {
       var updated = updateTab(ss, siswa.kelas, uid);
       pesan += " updateTab=" + (updated ? "SUKSES" : "GAGAL (cek baris " + siswa.nama + " di tab '" + siswa.kelas + "')");
+      pesan += " || DUMP " + siswa.kelas + ": " + dumpTab(ss, siswa.kelas);
       if (!updated) tampungUnknown(ss, uid, siswa.nama);
     } else {
       pesan += " -> cek isi sel UID di tab DATA_SISWA";
+      pesan += " || DUMP DATA_SISWA: " + dumpDataSiswa(ss);
       tampungUnknown(ss, uid, "");
     }
     logDebug(ss, pesan);
