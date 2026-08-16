@@ -67,3 +67,41 @@ arduino-cli compile --fqbn esp32:esp32:m5stack_stickc_plus2 firmware/m5stick
 
 - The RC522 only reads **13.56 MHz (Mifare/ISO14443A)** cards. 125 kHz tags will not work.
 - If the reader is intermittent, power the RC522 from a stable 3.3 V source.
+
+## Tools: PC logging dashboard
+
+`tools/attendance_log.py` reads the UID stream over USB serial and runs a
+small local dashboard in your browser. From there you can view attendance
+live, edit or delete names, and export to Excel.
+
+### Install
+
+```sh
+pip install pyserial openpyxl
+```
+
+### Run
+
+```sh
+cd tools
+python attendance_log.py            # opens the dashboard in Chrome
+python attendance_log.py --no-browser   # run without opening the browser
+python attendance_log.py --list         # print registered names, then exit
+```
+
+The dashboard is served at `http://localhost:8080`:
+
+- **Tap a card** → it appears in the table (auto-refreshes every 5 s).
+- **✏️ pencil** next to a name → rename that card (saved to `roster.csv`).
+- **🗑️ trash** next to a row → delete that row (clean up before export).
+- **Export Excel** → downloads a styled `attendance.xlsx`.
+
+### Registering cards
+
+Tap an unknown card, note its `UID`, then click the **✏️** next to it and
+type the name. It is saved to `roster.csv` and remembered on next launch.
+
+### Options
+
+- `DEDUP = False` (in `attendance_log.py`) logs every tap — good for testing.
+  Set it to `True` for production so each person registers one check-in per day.
