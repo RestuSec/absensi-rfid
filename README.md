@@ -63,6 +63,50 @@ arduino-cli compile --fqbn esp32:esp32:m5stack_stickc_plus2 firmware/m5stick
 - **Green** "HADIR" + long beep: card read OK (shows UID)
 - **Red** "GAGAL" + double beep: read failed
 
+## Standalone WiFi version (no laptop, no M5StickC)
+
+**`firmware/esp8266_oled_wifi/absensi_esp8266_oled_wifi.ino`** runs the whole
+thing on the ESP8266 alone: reads the RC522, shows the result on a **SSD1306
+OLED**, and sends every tap to a **Google Sheet** over WiFi. No laptop, no
+battery-hungry M5StickC — just the ESP8266 + a cheap OLED.
+
+### Wiring
+
+| OLED (SSD1306 I2C) | → | ESP8266 (NodeMCU) |
+|---|---|---|
+| VCC | → | 3V |
+| GND | → | G |
+| SCL | → | D1 |
+| SDA | → | D2 |
+
+RC522 wiring is unchanged (SDA→D8, SCK→D5, MOSI→D7, MISO→D6, RST→D3, 3.3V, GND).
+
+### Setup Google Sheet (once)
+
+1. Open `sheets.new`, make a spreadsheet.
+2. **Extensions → Apps Script** → paste the code from `tools/gas_attendance.gs`.
+3. **Deploy → New deployment → Web app**: Execute as *Me*, Who has access
+   *Anyone* → Deploy. Copy the `/exec` URL and paste it into `APPS_SCRIPT_URL`
+   in the firmware.
+4. Register names by editing the `DAFTAR` array in the firmware
+   (`{"19:79:F4:1F", "Budi"}`).
+
+### WiFi (WiFiManager)
+
+On first boot the ESP8266 creates its own hotspot **`AbsensiRFID`**. Connect
+with your phone, enter your WiFi SSID/password — it is saved permanently.
+To switch WiFi later, **hold the FLASH button for 3 seconds** to reset the
+stored network and reconfigure.
+
+### Build
+
+```sh
+arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/esp8266_oled_wifi
+arduino-cli upload --fqbn esp8266:esp8266:nodemcuv2 --port COM3 firmware/esp8266_oled_wifi
+```
+
+Libraries: MFRC522, Adafruit SSD1306, Adafruit GFX, WiFiManager.
+
 ## Notes
 
 - The RC522 only reads **13.56 MHz (Mifare/ISO14443A)** cards. 125 kHz tags will not work.
