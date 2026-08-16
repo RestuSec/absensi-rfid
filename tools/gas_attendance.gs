@@ -10,6 +10,8 @@
  * Urutan tap TIDAK mengubah urutan daftar absen.
  */
 
+var SHEET_ID = "1l9SbOloT0Req2wSPOAt1nujk2_urnOuU6ilfAWUFXzM";
+
 function dataSiswa(ss, uid) {
   var ds = ss.getSheetByName("DATA_SISWA");
   if (!ds) return null;
@@ -69,7 +71,7 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.openById(SHEET_ID);
     var body = JSON.parse(e.postData.contents);
     var uid = String(body.uid || "");
     var siswa = dataSiswa(ss, uid);
