@@ -31,19 +31,25 @@ const char* namaUntukUID(const String& uid) {
   return "";
 }
 
-// Kirim ke Google Sheets (write terjadi server-side walau dapat redirect)
+// Kirim ke Google Sheets (write terjadi server-side walau dapat redirect).
+// Retry 3x + timeout lama karena TLS ke Apps Script kadang flaky.
 bool kirimKeSheets(const String& uid, const String& nama) {
   String body = "{\"uid\":\"" + uid + "\",\"name\":\"" + nama + "\"}";
-  WiFiClientSecure client;
-  client.setInsecure();  // abaikan verifikasi sertifikat TLS (proyek sekolah)
-  HTTPClient http;
-  http.setTimeout(15000);
-  http.begin(client, APPS_SCRIPT_URL);
-  http.addHeader("Content-Type", "application/json");
-  int code = http.POST(body);
-  bool ok = (code == 200 || code == 301 || code == 302 || code == 303);
-  http.end();
-  return ok;
+  for (int coba = 0; coba < 3; coba++) {
+    WiFiClientSecure client;
+    client.setInsecure();  // abaikan verifikasi sertifikat TLS (proyek sekolah)
+    HTTPClient http;
+    http.setTimeout(20000);
+    http.begin(client, APPS_SCRIPT_URL);
+    http.addHeader("Content-Type", "application/json");
+    int code = http.POST(body);
+    bool ok = (code == 200 || code == 301 || code == 302 || code == 303);
+    http.end();
+    if (ok) return true;
+    Serial.println("  retry ke-" + String(coba + 1));
+    delay(500);
+  }
+  return false;
 }
 
 void setup() {
