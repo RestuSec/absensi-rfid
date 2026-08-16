@@ -15,7 +15,7 @@ MFRC522 rfid(SS_PIN, RST_PIN);
 
 // Google Apps Script (ganti kalau perlu)
 const char* APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbz1DvCbmSLYbtUqEI7DoqfGE_zwGzkllWD7mOIykJ4XZvH0Z1slZadkwTQ2GBcGB3hl/exec";
+  "https://script.google.com/macros/s/AKfycbw6y6CTxO5cdSD_wDRHkqdOQDBYgN1ONjpcQgBu204plhLt04T9vtGyYOcXA1jum_v0/exec";
 
 // UID -> Nama (tambahin siswa di sini)
 struct Siswa { const char* uid; const char* nama; };
