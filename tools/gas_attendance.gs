@@ -15,8 +15,10 @@ function dataSiswa(ss, uid) {
   if (!ds) return null;
   var u = String(uid).trim().toUpperCase();
   var data = ds.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) { // skip header
-    if (String(data[i][0]).trim().toUpperCase() == u) {
+  for (var i = 0; i < data.length; i++) {
+    var uidCell = String(data[i][0] || "").trim().toUpperCase();
+    if (uidCell == "" || uidCell == "UID") continue;  // skip header/kosong
+    if (uidCell == u) {
       return {
         nama: String(data[i][1] || "").trim(),
         kelas: String(data[i][2] || "").trim()
@@ -32,8 +34,10 @@ function updateTab(ss, kelas, uid) {
   if (!tab) return false;
   var u = String(uid).trim().toUpperCase();
   var values = tab.getDataRange().getValues();
-  for (var r = 1; r < values.length; r++) { // skip header
-    if (String(values[r][2]).trim().toUpperCase() == u) {
+  for (var r = 0; r < values.length; r++) {
+    var cell = String(values[r][2] || "").trim().toUpperCase();
+    if (cell == "" || cell == "UID") continue;  // skip header/kosong
+    if (cell == u) {
       tab.getRange(r + 1, 4, 1, 2).setValues([["Hadir", new Date()]]);
       return true;
     }
