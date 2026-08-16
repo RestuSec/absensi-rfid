@@ -34,13 +34,14 @@ const char* namaUntukUID(const String& uid) {
 // Kirim ke Google Sheets (write terjadi server-side walau dapat redirect)
 bool kirimKeSheets(const String& uid, const String& nama) {
   String body = "{\"uid\":\"" + uid + "\",\"name\":\"" + nama + "\"}";
-  WiFiClient client;
+  WiFiClientSecure client;
+  client.setInsecure();  // abaikan verifikasi sertifikat TLS (proyek sekolah)
   HTTPClient http;
-  http.setTimeout(8000);
+  http.setTimeout(15000);
   http.begin(client, APPS_SCRIPT_URL);
   http.addHeader("Content-Type", "application/json");
   int code = http.POST(body);
-  bool ok = (code == 200 || code == 302 || code == 303);
+  bool ok = (code == 200 || code == 301 || code == 302 || code == 303);
   http.end();
   return ok;
 }

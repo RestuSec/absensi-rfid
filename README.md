@@ -32,11 +32,12 @@ RFID card ──► RC522 ──► ESP8266 (NodeMCU) reads UID
 
 ### ESP8266 → M5StickC Plus2
 
+> Serial1 TX is **GPIO2 (D4)** on the NodeMCU, not the "TX"/GPIO1 pin.
+
 | ESP8266 | → | M5StickC |
 |---------|---|----------|
-| TX      | → | G26 (Serial2 RX) |
-| RX      | → | G0  (Serial2 TX) |
-| GND     | → | GND |
+| D4 (GPIO2, Serial1 TX) | → | G26 (Serial2 RX) |
+| GND | → | GND |
 
 > Note: TX/RX must be crossed (TX→RX, RX→TX). A shared GND is required.
 
