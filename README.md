@@ -42,8 +42,8 @@ RFID card ──► RC522 ──► ESP8266 (NodeMCU) reads UID
 
 ## Firmware
 
-- [`firmware/esp8266/absensi_esp8266.ino`](firmware/esp8266/absensi_esp8266.ino) — reads the RC522 and sends the UID over `Serial1`.
-- [`firmware/m5stick/m5_display.ino`](firmware/m5stick/m5_display.ino) — listens on `Serial2` and renders the result on screen + buzzer.
+- [`firmware/absensi_esp8266/absensi_esp8266.ino`](firmware/absensi_esp8266/absensi_esp8266.ino) — reads the RC522, connects WiFi, pushes the UID to Google Sheets, and sends the result to the M5 over `Serial1`.
+- [`firmware/m5_display/m5_display.ino`](firmware/m5_display/m5_display.ino) — listens on `Serial2` and renders the result on screen + buzzer.
 
 ### Libraries
 
@@ -53,8 +53,8 @@ RFID card ──► RC522 ──► ESP8266 (NodeMCU) reads UID
 ### Build (arduino-cli)
 
 ```sh
-arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/esp8266
-arduino-cli compile --fqbn esp32:esp32:m5stack_stickc_plus2 firmware/m5stick
+arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/absensi_esp8266
+arduino-cli compile --fqbn esp32:esp32:m5stack_stickc_plus2 firmware/m5_display
 ```
 
 ## Behavior
@@ -65,7 +65,7 @@ arduino-cli compile --fqbn esp32:esp32:m5stack_stickc_plus2 firmware/m5stick
 
 ## Standalone WiFi version (no laptop, no M5StickC)
 
-**`firmware/esp8266_oled_wifi/absensi_esp8266_oled_wifi.ino`** runs the whole
+**`firmware/absensi_esp8266_oled_wifi/absensi_esp8266_oled_wifi.ino`** runs the whole
 thing on the ESP8266 alone: reads the RC522, shows the result on a **SSD1306
 OLED**, and sends every tap to a **Google Sheet** over WiFi. No laptop, no
 battery-hungry M5StickC — just the ESP8266 + a cheap OLED.
@@ -101,8 +101,8 @@ stored network and reconfigure.
 ### Build
 
 ```sh
-arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/esp8266_oled_wifi
-arduino-cli upload --fqbn esp8266:esp8266:nodemcuv2 --port COM3 firmware/esp8266_oled_wifi
+arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/absensi_esp8266_oled_wifi
+arduino-cli upload --fqbn esp8266:esp8266:nodemcuv2 --port COM3 firmware/absensi_esp8266_oled_wifi
 ```
 
 Libraries: MFRC522, Adafruit SSD1306, Adafruit GFX, WiFiManager.
