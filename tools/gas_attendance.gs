@@ -59,6 +59,12 @@ function tampungUnknown(ss, uid, nama) {
   tab.appendRow([tab.getLastRow(), new Date(), uid, nama, "Hadir"]);
 }
 
+// Diagnostik: catat tiap POST + hasil ke tab DEBUG (hapus fungsi ini nanti)
+function logDebug(ss, pesan) {
+  var tab = cariAtauBuatTab(ss, "DEBUG");
+  tab.appendRow([new Date(), pesan]);
+}
+
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -67,14 +73,21 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var uid = String(body.uid || "");
     var siswa = dataSiswa(ss, uid);
+    var pesan = "UID='" + uid + "' dataSiswa=" + (siswa ? ("KETEMU nama='" + siswa.nama + "' kelas='" + siswa.kelas + "'") : "NULL");
     if (siswa) {
       var updated = updateTab(ss, siswa.kelas, uid);
+      pesan += " updateTab=" + (updated ? "SUKSES" : "GAGAL (cek baris " + siswa.nama + " di tab '" + siswa.kelas + "')");
       if (!updated) tampungUnknown(ss, uid, siswa.nama);
     } else {
+      pesan += " -> cek isi sel UID di tab DATA_SISWA";
       tampungUnknown(ss, uid, "");
     }
+    logDebug(ss, pesan);
     return ContentService.createTextOutput("OK")
       .setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    logDebug(ss, "ERROR: " + err);
+    throw err;
   } finally {
     lock.releaseLock();
   }
