@@ -3,11 +3,11 @@
  * Deploy as Web App: Run as "Me", Access "Anyone".
  * ESP8266 POSTs JSON {"uid":"..."}.
  *
- * Tab "DATA_SISWA" (kolom: UID | Nama | Kelas) = database siswa.
- * Tiap kelas punya tab fixed roster: No | Nama | UID | Status | Jam
- * (diisi awal dengan Status = "Belum"). Tiap tap mencari UID di tab
- * kelasnya, lalu mengubah Status -> "Hadir" dan mengisi Jam.
- * Urutan tap TIDAK mengubah urutan daftar absen.
+ * DATA_SISWA (UID | Nama | Kelas) = satu-satunya sumber data.
+ * Tab kelas dibuat/diperbaiki OTOMATIS dari DATA_SISWA tiap tap:
+ *   No | Nama | UID | Status | Jam, semua siswa kelas itu pre-filled
+ *   dengan Status "Belum". Tap mengubah Status -> "Hadir" + Jam.
+ * Tidak perlu bikin tab kelas manual.
  */
 
 var SHEET_ID = "1l9SbOloT0Req2wSPOAt1nujk2_urnOuU6ilfAWUFXzM";
@@ -30,15 +30,47 @@ function dataSiswa(ss, uid) {
   return null;
 }
 
+// Pastikan tab kelas ada + struktur No|Nama|UID|Status|Jam dengan
+// roster pre-filled dari DATA_SISWA (Status "Belum").
+// ponytail: rebuild tab = hapus isi lama yang strukturnya salah;
+// ceiling: data lama ilang, upgrade: pindahin dulu ke tab ARSIP.
+function jaminTabKelas(ss, kelas) {
+  var tab = ss.getSheetByName(kelas);
+  var ok = false;
+  if (tab) {
+    var hdr = tab.getRange(1, 1, 1, 5).getValues()[0];
+    ok = String(hdr[0]).trim() == "No" && String(hdr[1]).trim() == "Nama" &&
+         String(hdr[2]).trim() == "UID" && String(hdr[3]).trim() == "Status" &&
+         String(hdr[4]).trim() == "Jam";
+  }
+  if (!ok) {
+    if (!tab) tab = ss.insertSheet(kelas);
+    else tab.clearContents();
+    tab.getRange(1, 1, 1, 5).setValues([["No", "Nama", "UID", "Status", "Jam"]]);
+    var ds = ss.getSheetByName("DATA_SISWA");
+    if (ds) {
+      var data = ds.getDataRange().getValues();
+      var out = [];
+      var no = 1;
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][2] || "").trim().toUpperCase() == kelas.toUpperCase()) {
+          out.push([no++, String(data[i][1] || "").trim(), String(data[i][0] || "").trim(), "Belum", ""]);
+        }
+      }
+      if (out.length) tab.getRange(2, 1, out.length, 5).setValues(out);
+    }
+  }
+  return tab;
+}
+
 // Update baris siswa (match by UID di kolom 3) -> Status + Jam
 function updateTab(ss, kelas, uid) {
-  var tab = ss.getSheetByName(kelas);
-  if (!tab) return false;
+  var tab = jaminTabKelas(ss, kelas);
   var u = String(uid).trim().toUpperCase();
   var values = tab.getDataRange().getValues();
-  for (var r = 0; r < values.length; r++) {
+  for (var r = 1; r < values.length; r++) {
     var cell = String(values[r][2] || "").trim().toUpperCase();
-    if (cell == "" || cell == "UID") continue;  // skip header/kosong
+    if (cell == "" || cell == "UID") continue;
     if (cell == u) {
       tab.getRange(r + 1, 4, 1, 2).setValues([["Hadir", new Date()]]);
       return true;
@@ -61,36 +93,6 @@ function tampungUnknown(ss, uid, nama) {
   tab.appendRow([tab.getLastRow(), new Date(), uid, nama, "Hadir"]);
 }
 
-// Diagnostik: catat tiap POST + hasil ke tab DEBUG (hapus fungsi ini nanti)
-function logDebug(ss, pesan) {
-  var tab = cariAtauBuatTab(ss, "DEBUG");
-  tab.appendRow([new Date(), pesan]);
-}
-
-// Diagnostik: dump isi tab apa aja (hapus nanti)
-function dumpTab(ss, nama) {
-  var tab = ss.getSheetByName(nama);
-  if (!tab) return "TAB '" + nama + "' TIDAK ADA";
-  var data = tab.getDataRange().getValues();
-  var out = [];
-  for (var i = 0; i < data.length; i++) {
-    out.push("baris" + (i + 1) + "='" + String(data[i][0]) + "'|'" + String(data[i][1]) + "'|'" + String(data[i][2]) + "'|'" + String(data[i][3]) + "'|'" + String(data[i][4]) + "'");
-  }
-  return out.join(" # ");
-}
-
-// Diagnostik: dump isi tab DATA_SISWA biar keliatan perbedaan UID (hapus nanti)
-function dumpDataSiswa(ss) {
-  var ds = ss.getSheetByName("DATA_SISWA");
-  if (!ds) return "DATA_SISWA TIDAK ADA";
-  var data = ds.getDataRange().getValues();
-  var out = [];
-  for (var i = 0; i < data.length; i++) {
-    out.push("baris" + (i + 1) + "='" + String(data[i][0]) + "'|'" + String(data[i][1]) + "'|'" + String(data[i][2]) + "'");
-  }
-  return out.join(" # ");
-}
-
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -99,23 +101,14 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var uid = String(body.uid || "");
     var siswa = dataSiswa(ss, uid);
-    var pesan = "UID='" + uid + "' dataSiswa=" + (siswa ? ("KETEMU nama='" + siswa.nama + "' kelas='" + siswa.kelas + "'") : "NULL");
     if (siswa) {
       var updated = updateTab(ss, siswa.kelas, uid);
-      pesan += " updateTab=" + (updated ? "SUKSES" : "GAGAL (cek baris " + siswa.nama + " di tab '" + siswa.kelas + "')");
-      pesan += " || DUMP " + siswa.kelas + ": " + dumpTab(ss, siswa.kelas);
       if (!updated) tampungUnknown(ss, uid, siswa.nama);
     } else {
-      pesan += " -> cek isi sel UID di tab DATA_SISWA";
-      pesan += " || DUMP DATA_SISWA: " + dumpDataSiswa(ss);
       tampungUnknown(ss, uid, "");
     }
-    logDebug(ss, pesan);
     return ContentService.createTextOutput("OK")
       .setMimeType(ContentService.MimeType.TEXT);
-  } catch (err) {
-    logDebug(ss, "ERROR: " + err);
-    throw err;
   } finally {
     lock.releaseLock();
   }
